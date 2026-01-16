@@ -58,14 +58,7 @@ function SavingsCalculator() {
     for (let year = 0; year <= years; year++) {
       for (let month = 1; month <= 12; month++) {
         if (year === 0 && month === 1) {
-          data.push({
-            year: 0,
-            month: 0,
-            monthLabel: 'Initial',
-            contribution: 0,
-            interest: 0,
-            balance: initialBalance
-          });
+          
           continue;
         }
 
@@ -88,7 +81,7 @@ function SavingsCalculator() {
         data.push({
           year,
           month,
-          monthLabel: `Year ${year}, Month ${month}`,
+          monthLabel: `Year ${year + 1}, Month ${month}`,
           contribution,
           interest,
           balance
@@ -163,7 +156,7 @@ function SavingsCalculator() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-gray-800 mb-8">Savings Projection Calculator</h1>
+        <h1 className="text-4xl font-bold text-gray-800 mb-8">Savings Projection</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow-lg p-6">
@@ -283,7 +276,7 @@ function SavingsCalculator() {
 
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="p-6">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">Projection Details</h2>
+            <h2 className="text-2xl font-semibold text-gray-700">Projection Details</h2>
           </div>
           <div className="overflow-x-auto max-h-96">
             <table className="w-full">
@@ -298,10 +291,10 @@ function SavingsCalculator() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {projectionData.map((row, i) => (
                   <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900">
                       {row.monthLabel}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">
+                    <td className="px-6 py-2 whitespace-nowrap text-sm text-right text-gray-900">
                       {row.month === 0 ? (
                         '£0.00'
                       ) : (
@@ -313,10 +306,10 @@ function SavingsCalculator() {
                         />
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-purple-600">
+                    <td className="px-6 py-2 whitespace-nowrap text-sm text-right text-purple-600">
                       £{row.interest.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
+                    <td className="px-6 py-2 whitespace-nowrap text-sm text-right font-medium text-gray-900">
                       £{row.balance.toFixed(2)}
                     </td>
                   </tr>
