@@ -54,6 +54,8 @@ function SavingsCalculator() {
     let balance = initialBalance;
     const periodsPerYear = frequencies[compoundFrequency];
     const ratePerPeriod = annualRate / 100 / periodsPerYear;
+
+    let monthCount = 1;
     
     for (let year = 1; year <= years; year++) {
       for (let month = 1; month <= 12; month++) {
@@ -81,7 +83,7 @@ function SavingsCalculator() {
         data.push({
           year,
           month,
-          monthLabel: `Year ${year}, Month ${month}`,
+          monthLabel: `Month ${monthCount++}`,
           contribution,
           interest,
           balance
