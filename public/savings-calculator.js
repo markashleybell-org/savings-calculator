@@ -55,7 +55,7 @@ function SavingsCalculator() {
     const periodsPerYear = frequencies[compoundFrequency];
     const ratePerPeriod = annualRate / 100 / periodsPerYear;
     
-    for (let year = 0; year <= years; year++) {
+    for (let year = 1; year <= years; year++) {
       for (let month = 1; month <= 12; month++) {
         if (year === 0 && month === 1) {
           
@@ -81,7 +81,7 @@ function SavingsCalculator() {
         data.push({
           year,
           month,
-          monthLabel: `Year ${year + 1}, Month ${month}`,
+          monthLabel: `Year ${year}, Month ${month}`,
           contribution,
           interest,
           balance
@@ -103,12 +103,6 @@ function SavingsCalculator() {
   }, [projectionData]);
 
   const finalBalance = projectionData[projectionData.length - 1]?.balance || 0;
-
-  const handleMonthlyChange = (index, value) => {
-    const newContributions = [...monthlyContributions];
-    newContributions[index] = parseFloat(value) || 0;
-    setMonthlyContributions(newContributions);
-  };
 
   const handleDefaultContributionChange = (value) => {
     const newValue = parseFloat(value) || 0;
