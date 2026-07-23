@@ -18,6 +18,57 @@ function SavingsCalculator() {
   const [defaultMonthlyContribution, setDefaultMonthlyContribution] = useState(() => loadFromStorage('savings_defaultMonthlyContribution', 200));
   const [monthlyContributions, setMonthlyContributions] = useState(() => loadFromStorage('savings_monthlyContributions', Array(12).fill(200)));
 
+  const selectInputTextOnFocus = (event) => {
+    const input = event.target;
+
+    requestAnimationFrame(() => {
+      input.select();
+      input.setSelectionRange(0, input.value.length);
+    });
+  };
+
+  const getNumericInputProps = (inputMode = 'decimal') => ({
+    type: 'text',
+    inputMode,
+    enterKeyHint: 'done',
+    onFocus: selectInputTextOnFocus
+  });
+
+  const sanitizeNumericInput = (value, { allowDecimal = true } = {}) => {
+    const raw = String(value ?? '');
+    let sanitized = '';
+    let hasDecimal = false;
+
+    for (const char of raw) {
+      if (char >= '0' && char <= '9') {
+        sanitized += char;
+        continue;
+      }
+
+      if (allowDecimal && char === '.' && !hasDecimal) {
+        sanitized += char;
+        hasDecimal = true;
+      }
+    }
+
+    return sanitized;
+  };
+
+  const parseDecimalValue = (value, fallback = 0) => {
+    const parsed = parseFloat(sanitizeNumericInput(value, { allowDecimal: true }));
+    return isNaN(parsed) ? fallback : parsed;
+  };
+
+  const parseDecimalValueOrNull = (value) => {
+    const sanitized = sanitizeNumericInput(value, { allowDecimal: true });
+    if (sanitized === '' || sanitized === '.') return null;
+
+    const parsed = parseFloat(sanitized);
+    return isNaN(parsed) ? null : parsed;
+  };
+
+  const roundCurrency = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+
   // Save to storage whenever values change
   useEffect(() => {
     localStorage.setItem('savings_initialBalance', JSON.stringify(initialBalance));
@@ -107,14 +158,21 @@ function SavingsCalculator() {
   const finalBalance = projectionData[projectionData.length - 1]?.balance || 0;
 
   const handleDefaultContributionChange = (value) => {
-    const newValue = parseFloat(value) || 0;
+    const newValue = parseDecimalValue(value, 0);
     setDefaultMonthlyContribution(newValue);
     setMonthlyContributions(Array(12).fill(newValue));
   };
 
+  const parseYearsValue = (value) => {
+    const sanitized = sanitizeNumericInput(value, { allowDecimal: false });
+    const parsed = parseInt(sanitized, 10);
+    if (isNaN(parsed)) return 1;
+    return Math.min(30, Math.max(1, parsed));
+  };
+
   const handleIndividualMonthChange = (yearIndex, monthIndex, value) => {
-    const newValue = parseFloat(value);
-    if (isNaN(newValue)) return;
+    const newValue = parseDecimalValueOrNull(value);
+    if (newValue === null) return;
     
     const newContributions = [...monthlyContributions];
     newContributions[monthIndex - 1] = newValue;
@@ -164,9 +222,10 @@ function SavingsCalculator() {
                   Initial Balance (£)
                 </label>
                 <input
-                  type="number"
+                  {...getNumericInputProps('decimal')}
                   value={initialBalance}
-                  onChange={(e) => setInitialBalance(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => setInitialBalance(parseDecimalValue(e.target.value, 0))}
+                  onBlur={() => setInitialBalance((current) => roundCurrency(current || 0))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -176,10 +235,9 @@ function SavingsCalculator() {
                   Annual Interest Rate (%)
                 </label>
                 <input
-                  type="number"
-                  step="0.1"
+                  {...getNumericInputProps('decimal')}
                   value={annualRate}
-                  onChange={(e) => setAnnualRate(parseFloat(e.target.value) || 0)}
+                  onChange={(e) => setAnnualRate(parseDecimalValue(e.target.value, 0))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -189,11 +247,9 @@ function SavingsCalculator() {
                   Projection Period (Years)
                 </label>
                 <input
-                  type="number"
-                  min="1"
-                  max="30"
+                  {...getNumericInputProps('numeric')}
                   value={years}
-                  onChange={(e) => setYears(parseInt(e.target.value) || 1)}
+                  onChange={(e) => setYears(parseYearsValue(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -218,9 +274,14 @@ function SavingsCalculator() {
                   Default Monthly Contribution (£)
                 </label>
                 <input
-                  type="number"
+                  {...getNumericInputProps('decimal')}
                   value={defaultMonthlyContribution}
                   onChange={(e) => handleDefaultContributionChange(e.target.value)}
+                  onBlur={() => {
+                    const rounded = roundCurrency(defaultMonthlyContribution || 0);
+                    setDefaultMonthlyContribution(rounded);
+                    setMonthlyContributions(Array(12).fill(rounded));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
                 <p className="text-xs text-gray-500 mt-1">This will reset all monthly values</p>
@@ -295,9 +356,18 @@ function SavingsCalculator() {
                         '£0.00'
                       ) : (
                         <input
-                          type="number"
+                          {...getNumericInputProps('decimal')}
                           value={monthlyContributions[(row.month - 1) % 12] ?? defaultMonthlyContribution}
                           onChange={(e) => handleIndividualMonthChange(row.year, row.month, e.target.value)}
+                          onBlur={() => {
+                            const contributionIndex = (row.month - 1) % 12;
+                            setMonthlyContributions((currentContributions) => {
+                              const nextContributions = [...currentContributions];
+                              const currentValue = nextContributions[contributionIndex] ?? defaultMonthlyContribution;
+                              nextContributions[contributionIndex] = roundCurrency(currentValue || 0);
+                              return nextContributions;
+                            });
+                          }}
                           className="w-24 px-2 py-1 text-right border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                       )}
